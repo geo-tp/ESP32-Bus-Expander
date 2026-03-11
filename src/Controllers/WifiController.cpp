@@ -752,7 +752,7 @@ void WifiController::handleHelp()
     terminalView.println("  disconnect                 Disconnect from current Wi-Fi");
     terminalView.println("  status                     Show C5 Wi-Fi status");
     terminalView.println("  scan                       Scan nearby 2.4GHz and 5GHz networks");
-    terminalView.println("  discovery                  Run network discovery commands");
+    terminalView.println("  discovery [timeout_ms]     Run network discovery");
     terminalView.println("  probe                      Probe open networks for internet access");
     terminalView.println("  sniff                      Sniff 2.4GHz and 5GHz traffic");
     terminalView.println("  evil                       Start active sniff/deauth/handshake capture mode");

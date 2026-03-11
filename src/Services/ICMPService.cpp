@@ -30,6 +30,7 @@ struct ICMPTaskParams
 struct DiscoveryTaskParams
 {
     std::string deviceIP;
+    int timeout_ms;
     ICMPService *service;
 };
 
@@ -96,10 +97,11 @@ void ICMPService::discoveryTask(void* params){
     auto* taskParams = static_cast<DiscoveryTaskParams*>(params);
     std::string deviceIP = taskParams->deviceIP;
     ICMPService* service = taskParams->service;
+    int timeoutMs = taskParams->timeout_ms;
     ip4_addr_t targetIP;
     uint32_t targetsResponded = 0;
 
-    pushICMPLog("Discovery: Scanning network for devices... Press [ENTER] to stop.\r\n");
+    pushICMPLog("Discovery: Scanning for devices with timeout " + std::to_string(timeoutMs) + " ms... Press [ENTER] to stop.\r\n");
 
     if (!ip4addr_aton(deviceIP.c_str(), &targetIP))
     {
@@ -137,7 +139,7 @@ void ICMPService::discoveryTask(void* params){
         std::string targetIPStr(targetIPCStr);
 
         service->cleanupICMPService();
-        auto *params = new ICMPTaskParams{targetIPStr, 2, 150, 100, service};
+        auto *params = new ICMPTaskParams{targetIPStr, 2, timeoutMs, 100, service};
 
         xTaskCreatePinnedToCore(pingAPI, "ICMPPing", 4096, params, 1, nullptr, 0);
 
@@ -160,14 +162,14 @@ void ICMPService::discoveryTask(void* params){
     vTaskDelete(nullptr);
 }
 
-void ICMPService::startDiscoveryTask(const std::string deviceIP)
+void ICMPService::startDiscoveryTask(const std::string deviceIP, int timeout_ms)
 {
     report.clear();
     discoveryReady = false;
     stopICMPFlag = false;
 
     // Start job
-    auto* p = new DiscoveryTaskParams{deviceIP, this};
+    auto* p = new DiscoveryTaskParams{deviceIP, timeout_ms, this};
     xTaskCreatePinnedToCore(discoveryTask, "ICMPDiscover", 8192, p, 1, nullptr, 0);
 }
 
@@ -265,7 +267,7 @@ void ICMPService::pingAPI(void *pvParams)
     esp_ping_start(h);
 
     // Wait up to count * (timeout + interval) + a small delay
-    uint32_t wait_ms = (uint32_t)config.count * (config.timeout_ms + config.interval_ms) + 100;
+    uint32_t wait_ms = (uint32_t)config.count * (config.timeout_ms + config.interval_ms) + 10;
     uint32_t t0 = millis();
     while (!ctx.done && (millis() - t0) < wait_ms)
     {

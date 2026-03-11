@@ -25,7 +25,7 @@ public:
     // Normal ping
     void startPingTask(const std::string& host, int count = 5, int timeout_ms = 1000, int interval_ms = 200);
     // Discovery of devices
-    void startDiscoveryTask(const std::string deviceIP);
+    void startDiscoveryTask(const std::string deviceIP, int timeout_ms = 200);
     static void discoveryTask(void* params);
 
     // Results
