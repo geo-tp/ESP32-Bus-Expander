@@ -113,8 +113,7 @@ void WifiController::handleConnect(const TerminalCommand &cmd)
     wifiService.setModeApSta();
     wifiService.connect(ssid, password);
     if (wifiService.isConnected()) {
-        terminalView.println("\nC5 WiFi: ✅ Connected successfully.\n");
-
+        terminalView.println("\nC5 WiFi ✅ Connected successfully. IP: " + wifiService.getLocalIP() + "\n");
         // Save creds
         nvsService.open();
         nvsService.saveString(state.getNvsSsidField(), ssid);
