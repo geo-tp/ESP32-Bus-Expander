@@ -464,32 +464,47 @@ Spoof
 void WifiController::handleSpoof(const TerminalCommand &cmd)
 {
     auto mode = cmd.getSubcommand();
-    auto mac = cmd.getArgs();
+    auto mac  = cmd.getArgs();
 
     if (mode.empty() && mac.empty())
     {
-        terminalView.println("Usage: spoof sta <mac>");
-        terminalView.println("       spoof ap <mac>");
+        terminalView.println("Usage: spoof sta 02:AA:BB:CC:DD:EE");
+        terminalView.println("       spoof ap 02:AA:BB:CC:DD:EE");
         return;
     }
 
-    WifiService::MacInterface iface = (mode == "sta")
-                                          ? WifiService::MacInterface::Station
-                                          : WifiService::MacInterface::AccessPoint;
+    // user entered: spoof <mac> -> assume station mode
+    if (mac.empty())
+    {
+        mac = mode;
+        mode = "sta";
+    }
 
-    terminalView.println("C5 WiFi: Spoofing " + mode + " MAC to " + mac + "...");
+    if (mode != "sta" && mode != "ap")
+    {
+        terminalView.println("Invalid mode. Use 'sta' or 'ap'.");
+        return;
+    }
+
+    WifiService::MacInterface iface =
+        (mode == "sta")
+            ? WifiService::MacInterface::Station
+            : WifiService::MacInterface::AccessPoint;
+
+    terminalView.println("WiFi: Spoofing " + mode + " MAC to " + mac + "...");
 
     bool ok = wifiService.spoofMacAddress(mac, iface);
 
     if (ok)
     {
-        terminalView.println("C5 WiFi: MAC spoofed successfully.");
+        terminalView.println("WiFi: MAC spoofed successfully.");
     }
     else
     {
-        terminalView.println("C5 WiFi: Failed to spoof MAC.");
+        terminalView.println("WiFi: Failed to spoof. Use a valid unicast MAC (ex: 02:AA:BB:CC:DD:EE).");
     }
 }
+
 
 /*
 Repeater
