@@ -122,7 +122,7 @@ std::string HttpService::fetchJson(const std::string& url ,int bodyMaxBytes)
     constexpr int timeout_ms   = 10000;
     constexpr bool insecure    = true;
     constexpr int stack_bytes  = 20000;
-    constexpr int core         = 1;
+    constexpr int core         = 0;
 
     // Task
     startGetTask(url, timeout_ms, bodyMaxBytes,
