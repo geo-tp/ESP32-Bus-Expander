@@ -9,6 +9,7 @@ enum class ModeEnum {
     None = -1,
     C5,
     WiFi,
+    Zigbee,
     COUNT
 };
 
@@ -17,6 +18,7 @@ public:
     inline static const std::map<ModeEnum, std::string> map = {
         {ModeEnum::None,       "None"},
         {ModeEnum::WiFi,       "C5 WIFI"},
+        {ModeEnum::Zigbee,     "ZIGBEE"},
 
     };
 

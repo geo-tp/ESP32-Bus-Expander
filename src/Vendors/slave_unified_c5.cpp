@@ -1737,7 +1737,12 @@ static void readSerialLines() {
 // 24. SETUP / LOOP
 // ─────────────────────────────────────────────
 void setupEvilSlave() {
+#if ARDUINO_USB_MODE
+  // USB Serial/JTAG console: no pin muxing, only the baud is configurable
+  Serial.begin(115200);
+#else
   Serial.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN);
+#endif
   // SerialUART.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN);
 
   if (!ledSet && ledEnabled) {

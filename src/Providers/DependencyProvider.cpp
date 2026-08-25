@@ -15,6 +15,7 @@ DependencyProvider::DependencyProvider(ITerminalView& terminalView, IInput& term
       icmpService(),
       httpService(),
       modbusService(),
+      zigbeeService(),
 
       // Shells
       modbusShell(terminalView, terminalInput, argTransformer, userInputManager, modbusService),
@@ -29,7 +30,8 @@ DependencyProvider::DependencyProvider(ITerminalView& terminalView, IInput& term
       userInputManager(terminalView, terminalInput, argTransformer),
 
       // Controllers
-      wifiController(terminalView, terminalInput, wifiService, wifiOpenScannerService, littleFsService, nvsService, argTransformer, userInputManager, nmapService, icmpService, httpService, jsonTransformer, modbusShell)
+      wifiController(terminalView, terminalInput, wifiService, wifiOpenScannerService, littleFsService, nvsService, argTransformer, userInputManager, nmapService, icmpService, httpService, jsonTransformer, modbusShell),
+      zigbeeController(terminalView, terminalInput, zigbeeService, argTransformer, userInputManager)
 {
 }
 
@@ -40,9 +42,11 @@ IInput& DependencyProvider::getTerminalInput() { return terminalInput; }
 // Services
 WifiService &DependencyProvider::getWifiService() { return wifiService; }
 WifiOpenScannerService &DependencyProvider::getWifiOpenScannerService() { return wifiOpenScannerService; }
+ZigbeeService &DependencyProvider::getZigbeeService() { return zigbeeService; }
 
 // Controllers
 WifiController &DependencyProvider::getWifiController() { return wifiController; }
+ZigbeeController &DependencyProvider::getZigbeeController() { return zigbeeController; }
 
 // Transformers
 ArgTransformer &DependencyProvider::getArgTransformer() { return argTransformer; }

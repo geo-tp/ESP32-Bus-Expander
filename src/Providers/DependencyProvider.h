@@ -14,6 +14,7 @@ and injecting shared instances of core components
 #include "Services/ICMPService.h"
 #include "Services/HttpService.h"
 #include "Services/ModbusService.h"
+#include "Services/ZigbeeService.h"
 #include "Transformers/JsonTransformer.h"
 #include "Shells/ModbusShell.h"
 #include "Transformers/ArgTransformer.h"
@@ -21,6 +22,7 @@ and injecting shared instances of core components
 #include "Managers/UserInputManager.h"
 #include "Managers/CommandHistoryManager.h"
 #include "Controllers/WifiController.h"
+#include "Controllers/ZigbeeController.h"
 
 
 class DependencyProvider
@@ -35,9 +37,11 @@ public:
     // Services
     WifiService &getWifiService();
     WifiOpenScannerService &getWifiOpenScannerService();
+    ZigbeeService &getZigbeeService();
 
     // Controllers
     WifiController &getWifiController();
+    ZigbeeController &getZigbeeController();
 
     // Transformers
     ArgTransformer &getArgTransformer();
@@ -64,12 +68,14 @@ private:
     ICMPService icmpService;
     HttpService httpService;
     ModbusService modbusService;
+    ZigbeeService zigbeeService;
 
     // Shells
     ModbusShell modbusShell;
     
     // Controllers
     WifiController wifiController;
+    ZigbeeController zigbeeController;
     
     // Transformers
     JsonTransformer jsonTransformer;
