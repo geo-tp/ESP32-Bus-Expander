@@ -85,6 +85,7 @@ Build environments:
 | Environment | Board | Zigbee roles |
 |-------------|-------|--------------|
 | `c6slave`   | ESP32-C6 DevKitM-1 | Coordinator + Router |
+| `c6slave-ed` | ESP32-C6 DevKitM-1 | End Device (sleepy) |
 | `c5slave`   | ESP32-C5 DevKitC-1 | Wi-Fi mode only |
 
 Wiring for C6 (flat cable, same pin numbers cross over):
@@ -121,7 +122,7 @@ Notes:
 - As a **Light** device, hubs control the tool (received commands appear under `events`); as a **Switch**, the tool controls paired lights.
 - Sensor readings are fake by design - useful to test how hubs and automations react to injected telemetry.
 - Scenes are handled natively when hubs store/recall them. Groups can be targeted directly (`on 0x1234`).
-- The End Device role requires a separate ED-flagged build (same split as the upstream core libraries).
+- The End Device role requires the `c6slave-ed` image (separate prebuilt Zigbee libraries, same split as upstream).
 
 
 ## Warning
