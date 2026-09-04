@@ -35,32 +35,27 @@ It allows new radio technologies to be added without changing the main firmware.
 ## Current Features
 
 - **Wi-Fi 5 GHz support** (C5)
-- **Zigbee mode** (C6 builds): device emulation, network controller, scanning - see [Zigbee Mode](#zigbee-mode)
+- **Zigbee support** (C5 and C6) see [Zigbee Mode](#zigbee-mode)
 - Connected to the Bit Pirate via **UART**
 - Works as a **radio coprocessor**
 - Can be controlled from the Bit Pirate firmware
 
-With the expander connected, the Bit Pirate can interact with networks that require **5 GHz connectivity**.
+With the expander connected, the Bit Pirate can interact with networks that require **802.15.4-based radio protocols**.
 
 ## Planned Features
 
-Future firmware versions may extend support for additional radio protocols available on the **ESP32-C5**, including:
+Future firmware versions may extend support for additional radio protocols:
 
 - **Thread**
 - **Matter**
 - Other **802.15.4 based protocols**
 
-This will allow the ESP32 Bit Pirate ecosystem to interact with **IoT wireless networks and devices**.
+This will allow the ESP32 Bit Pirate ecosystem to interact with more **IoT wireless networks and devices**.
 
 
 ## Hardware
 
-The Bus Expander is designed for **ESP32-C5 based boards**.
-
-Minimum requirements:
-
-- ESP32-C5 chip (4MB flash, no PSRAM needed)
-- UART connection to the Bit Pirate device
+The Bus Expander is designed for **ESP32-C5 and ESP32-C6 based boards** with at least 4MB flash, no PSRAM needed.
 
 ## Connection
 
@@ -85,9 +80,9 @@ Build environments:
 | Environment | Board | Zigbee roles |
 |-------------|-------|--------------|
 | `c6slave`   | ESP32-C6 DevKitM-1 | 2.4 GHz Wi-Fi; Coordinator + Router by default, or End Device |
-| `c5slave`   | ESP32-C5 DevKitC-1 | 2.4/5 GHz Wi-Fi; Coordinator + Router |
+| `c5slave`   | ESP32-C5 DevKitC-1 | 2.4/5 GHz Wi-Fi; Coordinator + Router by default, or End Device |
 
-The C6 environment builds the Coordinator/Router firmware by default with
+The environment builds the Coordinator/Router firmware by default with
 `-D ZIGBEE_MODE_ZCZR`. To build the End Device firmware, replace that flag in
 `platformio.ini` with `-D ZIGBEE_MODE_ED` before compiling. These are separate
 compile-time Zigbee configurations; do not enable both flags at once.
