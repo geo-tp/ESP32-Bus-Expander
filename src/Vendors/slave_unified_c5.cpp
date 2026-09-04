@@ -1,3 +1,5 @@
+#if defined(BUS_EXPANDER_C5)
+
 /*---------------------------------------------------------------------
   ESP32-C5 Unified (Serial-controlled)
   Modes:
@@ -1800,3 +1802,5 @@ void runEvilSlave() {
     t_lastClearWard = now;
   }
 }
+
+#endif  // BUS_EXPANDER_C5
