@@ -47,18 +47,24 @@ Dispatch Command
 void CommandDispatcher::dispatchCommand(const TerminalCommand& cmd) {
     // Could be used for other mode as zigbee etc, for now only WiFi
     // Mode change command
-    // if (cmd.getRoot() == "mode" || cmd.getRoot() == "m") {
-    //     ModeEnum maybeNewMode = provider.getUtilityController().handleModeChangeCommand(cmd);
-    //     if (maybeNewMode != ModeEnum::None) {
-    //         setCurrentMode(maybeNewMode);
-    //     }
-    //     return;
-    // }
+    if (cmd.getRoot() == "mode") {
+        ModeEnum maybeNewMode = ModeEnumMapper::fromString(cmd.getSubcommand());
+        if (maybeNewMode != ModeEnum::None) {
+            setCurrentMode(maybeNewMode);
+        } else {
+            provider.getTerminalView().println("Unknown mode. Available: wifi, zigbee");
+        }
+        return;
+    }
 
     // Mode specific command
     switch (state.getCurrentMode()) {
         case ModeEnum::WiFi:
             provider.getWifiController().handleCommand(cmd);
+            break;
+
+        case ModeEnum::Zigbee:
+            provider.getZigbeeController().handleCommand(cmd);
             break;
     }
 }
@@ -77,6 +83,10 @@ void CommandDispatcher::setCurrentMode(ModeEnum newMode) {
         case ModeEnum::WiFi:
             provider.getWifiController().ensureConfigured();
             break;
+
+        case ModeEnum::Zigbee:
+            provider.getZigbeeController().ensureConfigured();
+            break;
     }
 }
 
@@ -89,7 +99,13 @@ void CommandDispatcher::releaseMode(ModeEnum currentMode, ModeEnum newMode) {
     }
 
     switch (currentMode) {
-        // For now, no realy heavy resources in modes 
+        case ModeEnum::WiFi:
+            break;
+
+        // Stop the radio when leaving Zigbee mode
+        case ModeEnum::Zigbee:
+            provider.getZigbeeController().ensureReleased();
+            break;
 
         default:
             break;

@@ -1,7 +1,12 @@
 #include "SerialTerminalView.h"
 
 void SerialTerminalView::initialize() {
-    Serial.begin(baudrate, SERIAL_8N1, rxPin, txPin); 
+#if ARDUINO_USB_MODE
+    // USB Serial/JTAG console: no pin muxing, only the baud is configurable
+    Serial.begin(baudrate);
+#else
+    Serial.begin(baudrate, SERIAL_8N1, rxPin, txPin);
+#endif
     while (!Serial) {
         delay(10);
     }
