@@ -1,0 +1,185 @@
+name: Upstream Firmware Delivery
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: upstream-firmware-delivery
+  cancel-in-progress: true
+
+jobs:
+  build-and-publish:
+    name: Build and publish upstream firmware
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Check out pushed commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-platformio-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-platformio-
+
+      - name: Install build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python -m pip install --upgrade pip setuptools platformio
+          pio --version
+
+      - name: Build and collect firmware files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          OUTPUT_DIR="${RUNNER_TEMP}/upstream-builds"
+          DOWNLOAD_DIR="${OUTPUT_DIR}/downloads"
+          SOURCE_SHA="$(git rev-parse HEAD)"
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+          BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
+          rm -rf "${OUTPUT_DIR}"
+          mkdir -p "${DOWNLOAD_DIR}"
+
+          ENVIRONMENTS=(c5slave c6slave)
+
+          for ENVIRONMENT in "${ENVIRONMENTS[@]}"; do
+            if ! grep -q "^\[env:${ENVIRONMENT}\]$" platformio.ini; then
+              echo "Required firmware environment is missing: ${ENVIRONMENT}"
+              exit 1
+            fi
+          done
+
+          cat > "${OUTPUT_DIR}/README.md" <<EOF
+          # ESP32 Bus Expander - Upstream firmware
+
+          Firmware components generated automatically from the latest commit
+          on the \`main\` branch.
+
+          **These files are development builds, not stable releases.**
+
+          - Branch: \`${GITHUB_REF_NAME}\`
+          - Commit: [\`${SOURCE_SHA}\`](https://github.com/${GITHUB_REPOSITORY}/commit/${SOURCE_SHA})
+          - Build date: \`${BUILD_DATE}\`
+
+          ## Flashing
+
+          Each environment contains four separate files:
+
+          - \`boot_app0.bin\`
+          - \`bootloader.bin\`
+          - \`firmware.bin\`
+          - \`partitions.bin\`
+
+          Flash offsets:
+
+          | Environment | bootloader | partitions | boot_app0 | firmware |
+          |---|---:|---:|---:|---:|
+          | \`c5slave\` | \`0x2000\` | \`0x8000\` | \`0xE000\` | \`0x10000\` |
+          | \`c6slave\` | \`0x0000\` | \`0x8000\` | \`0xE000\` | \`0x10000\` |
+
+          ## Downloads
+
+          EOF
+
+          for ENVIRONMENT in "${ENVIRONMENTS[@]}"; do
+            echo "::group::Build ${ENVIRONMENT}"
+
+            pio run -e "${ENVIRONMENT}"
+
+            BUILD_DIR=".pio/build/${ENVIRONMENT}"
+            ENV_DOWNLOAD_DIR="${DOWNLOAD_DIR}/${ENVIRONMENT}"
+            mkdir -p "${ENV_DOWNLOAD_DIR}"
+
+            # PlatformIO generates the other three images in BUILD_DIR;
+            # boot_app0.bin is supplied by the Arduino framework package.
+            BOOT_APP0_SOURCE="${HOME}/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin"
+            if [[ ! -s "${BOOT_APP0_SOURCE}" ]]; then
+              echo "Required framework component is missing or empty: ${BOOT_APP0_SOURCE}"
+              exit 1
+            fi
+            cp "${BOOT_APP0_SOURCE}" "${ENV_DOWNLOAD_DIR}/boot_app0.bin"
+
+            for FILE in bootloader.bin firmware.bin partitions.bin; do
+              SOURCE_FILE="${BUILD_DIR}/${FILE}"
+              if [[ ! -s "${SOURCE_FILE}" ]]; then
+                echo "Required firmware component is missing or empty: ${SOURCE_FILE}"
+                exit 1
+              fi
+              cp "${SOURCE_FILE}" "${ENV_DOWNLOAD_DIR}/${FILE}"
+            done
+
+            cat >> "${OUTPUT_DIR}/README.md" <<EOF
+          ### \`${ENVIRONMENT}\`
+
+          - [boot_app0.bin](downloads/${ENVIRONMENT}/boot_app0.bin)
+          - [bootloader.bin](downloads/${ENVIRONMENT}/bootloader.bin)
+          - [firmware.bin](downloads/${ENVIRONMENT}/firmware.bin)
+          - [partitions.bin](downloads/${ENVIRONMENT}/partitions.bin)
+
+          EOF
+
+            echo "::endgroup::"
+          done
+
+          (
+            cd "${OUTPUT_DIR}"
+            find downloads -type f -name '*.bin' -print0 \
+            | sort -z \
+            | xargs -0 sha256sum > SHA256SUMS.txt
+          )
+
+          cat >> "${OUTPUT_DIR}/README.md" <<EOF
+          ## Verification
+
+          SHA-256 checksums are available in
+          [SHA256SUMS.txt](SHA256SUMS.txt).
+
+          Generated automatically from commit \`${SHORT_SHA}\`.
+          EOF
+
+      - name: Replace upstream-builds branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          OUTPUT_DIR="${RUNNER_TEMP}/upstream-builds"
+          SOURCE_SHA="$(git rev-parse --short=7 HEAD)"
+
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout --orphan upstream-builds-publish
+          git rm -rf .
+          git clean -ffdx
+
+          cp -a "${OUTPUT_DIR}/." .
+
+          git add README.md SHA256SUMS.txt downloads/
+          git commit -m "upstream: build ${SOURCE_SHA}"
+          git push \
+            origin \
+            HEAD:refs/heads/upstream-builds \
+            --force
