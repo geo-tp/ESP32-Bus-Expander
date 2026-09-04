@@ -13,6 +13,8 @@ Setup
 void CommandDispatcher::setup() {
     // Initialize serial
     provider.getTerminalView().initialize();
+    provider.getTerminalView().println("Expander Connected: Starting... Type 'exit' to stop.");
+    provider.getTerminalView().println("Type 'mode' to select the protocol mode");
 }
 
 /*
@@ -45,11 +47,33 @@ void CommandDispatcher::dispatch(const std::string& raw) {
 Dispatch Command
 */
 void CommandDispatcher::dispatchCommand(const TerminalCommand& cmd) {
-    // Could be used for other mode as zigbee etc, for now only WiFi
-    // Mode change command
-    if (cmd.getRoot() == "mode") {
-        ModeEnum maybeNewMode = ModeEnumMapper::fromString(cmd.getSubcommand());
-        if (maybeNewMode != ModeEnum::None) {
+    const std::string root = cmd.getRoot();
+
+    // These commands are sent by the Bit Pirate while it is detecting or
+    // leaving an expander and must work independently of the active mode.
+    if (root == "handshake") {
+        provider.getTerminalView().println("[[BP-HANDSHAKE-OK]]");
+        return;
+    }
+    if (root == "exit") {
+        releaseMode(state.getCurrentMode(), ModeEnum::None);
+        state.setCurrentMode(ModeEnum::None);
+        return;
+    }
+
+    if (root == "mode" || root == "m" || root == "wifi" || root == "zigbee") {
+        const std::string requested = root == "wifi" || root == "zigbee"
+            ? root : cmd.getSubcommand();
+        ModeEnum maybeNewMode = ModeEnumMapper::fromString(requested);
+        if (requested.empty()) {
+            const auto modes = ModeEnumMapper::getProtocols();
+            const auto modeNames = ModeEnumMapper::getProtocolNames(modes);
+            const int selected = provider.getUserInputManager().readValidatedChoiceIndex(
+                "Select mode", modeNames, 0);
+            if (selected >= 0 && selected < static_cast<int>(modes.size())) {
+                setCurrentMode(modes[static_cast<size_t>(selected)]);
+            }
+        } else if (maybeNewMode != ModeEnum::None) {
             setCurrentMode(maybeNewMode);
         } else {
             provider.getTerminalView().println("Unknown mode. Available: wifi, zigbee");
@@ -57,7 +81,6 @@ void CommandDispatcher::dispatchCommand(const TerminalCommand& cmd) {
         return;
     }
 
-    // Mode specific command
     switch (state.getCurrentMode()) {
         case ModeEnum::WiFi:
             provider.getWifiController().handleCommand(cmd);
@@ -66,6 +89,10 @@ void CommandDispatcher::dispatchCommand(const TerminalCommand& cmd) {
         case ModeEnum::Zigbee:
             provider.getZigbeeController().handleCommand(cmd);
             break;
+
+        case ModeEnum::None:
+            provider.getTerminalView().println("Type 'm' or 'mode' to start.");
+            break;
     }
 }
 
@@ -73,6 +100,11 @@ void CommandDispatcher::dispatchCommand(const TerminalCommand& cmd) {
 Set Mode
 */
 void CommandDispatcher::setCurrentMode(ModeEnum newMode) {
+    if (newMode == ModeEnum::Zigbee && !provider.getZigbeeService().isSupported()) {
+        provider.getTerminalView().println("Zigbee is unsupported by this build.");
+        return;
+    }
+
     // Release resources of current mode if needed
     auto currentMode = state.getCurrentMode();
     releaseMode(currentMode, newMode);
