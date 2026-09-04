@@ -18,6 +18,9 @@ public:
     bool sensorResult = true;
     bool startScanResult = true;
     bool supportedFlag = true;
+    bool coordinatorSupported = true;
+    bool routerSupported = true;
+    bool endDeviceSupported = true;
 
     // Configurable reported status
     ZigbeeNetworkStatus status;
@@ -201,6 +204,13 @@ public:
     }
 
     ZigbeeNetworkStatus getStatus() override { return status; }
+
+    bool isRoleSupported(ZigbeeRoleEnum role) const override {
+        if (!supportedFlag) return false;
+        if (role == ZigbeeRoleEnum::Coordinator) return coordinatorSupported;
+        if (role == ZigbeeRoleEnum::Router) return routerSupported;
+        return endDeviceSupported;
+    }
 
     bool isSupported() const override { return supportedFlag; }
 };

@@ -272,6 +272,16 @@ void test_start_end_device_role_is_forwarded_to_service() {
     TEST_ASSERT_EQUAL_UINT32(0, fixture.service.permitCalls);
 }
 
+void test_unsupported_role_is_rejected_before_start() {
+    ZigbeeControllerFixture fixture;
+    fixture.service.endDeviceSupported = false;
+
+    fixture.controller.handleCommand(TerminalCommand("start", "enddevice"));
+
+    TEST_ASSERT_EQUAL_UINT32(0, fixture.service.startCalls);
+    TEST_ASSERT_TRUE(fixture.view.contains("Unsupported Zigbee role"));
+}
+
 void test_device_light_propagates_endpoint_and_confirms() {
     ZigbeeControllerFixture fixture;
 
@@ -628,6 +638,7 @@ void runZigbeeControllerTests() {
     RUN_TEST(test_start_router_starts_stack_in_router_role);
     RUN_TEST(test_start_accepts_short_aliases);
     RUN_TEST(test_start_end_device_role_is_forwarded_to_service);
+    RUN_TEST(test_unsupported_role_is_rejected_before_start);
     RUN_TEST(test_start_with_invalid_role_reports_error_without_touching_service);
     RUN_TEST(test_status_prints_zigbee_status_line);
     RUN_TEST(test_channel_within_range_is_forwarded_to_service);

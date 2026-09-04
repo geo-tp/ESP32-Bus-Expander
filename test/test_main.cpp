@@ -7,6 +7,7 @@
 
 #include "Controllers/test_ZigbeeController.cpp"
 #include "Enums/test_ZigbeeRoleEnum.cpp"
+#include "Enums/test_ModeEnum.cpp"
 
 void setUp() {}
 void tearDown() {}
@@ -14,6 +15,7 @@ void tearDown() {}
 int main() {
     UNITY_BEGIN();
     runZigbeeRoleEnumTests();
+    runModeEnumTests();
     runZigbeeControllerTests();
     return UNITY_END();
 }
