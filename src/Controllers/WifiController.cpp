@@ -2,6 +2,16 @@
 #include "Vendors/wifi_atks.h"
 #include "Vendors/slave_unified_c5.h"
 
+namespace {
+
+#if defined(BUS_EXPANDER_C5)
+constexpr bool wifi5GHz = true;
+#else
+constexpr bool wifi5GHz = false;
+#endif
+
+}
+
 /*
 Entry point for command
 */
@@ -29,8 +39,6 @@ void WifiController::handleCommand(const TerminalCommand &cmd)
     else if (root == "lookup") handleLookup(cmd);
     else if (root == "discovery") handleDiscovery(cmd);
     else if (root == "reset") handleReset();
-    else if (root == "exit") handleExit(); // hidden command to signal master to exit
-    else if (root == "handshake") handleHandshake(); // hidden command to signal detection
     else handleHelp();
 }
 
@@ -145,7 +153,9 @@ void WifiController::handleStatus(const TerminalCommand &cmd)
     auto hostname = wifiService.getHostname(); if (hostname.empty()) hostname = "N/A";
 
     terminalView.println("\n=== C5 Wi-Fi Status ===");
-    terminalView.println("Radio        : 2.4 GHz / 5 GHz");
+    terminalView.println(wifi5GHz
+        ? "Radio        : 2.4 GHz / 5 GHz"
+        : "Radio        : 2.4 GHz");
     terminalView.println("Mode         : " + std::string(wifiService.getWifiModeRaw() == WIFI_MODE_AP ? "Access Point" : "Station"));
     terminalView.println("AP MAC       : " + wifiService.getMacAddressAp());
     terminalView.println("STA MAC      : " + wifiService.getMacAddressSta());
@@ -269,6 +279,14 @@ AP Spam
 */
 void WifiController::handleApSpam()
 {
+#if !defined(BUS_EXPANDER_C5)
+    terminalView.println("This build supports Wi-Fi 2.4 GHz only; 5 GHz beacon spam is unavailable.");
+    return;
+#endif
+    if (!wifiService.prepareRawTx()) {
+        terminalView.println("C5 WiFi: Failed to prepare raw packet injection.\n");
+        return;
+    }
     terminalView.println("C5 WiFi: Starting beacon spam on 5 GHz channels... Press [ENTER] to stop.");
     while (true)
     {
@@ -378,9 +396,11 @@ void WifiController::handleSniff(const TerminalCommand &cmd)
 {
     std::vector<std::string> modes = {
         " Band 2.4 GHz",
+#if defined(BUS_EXPANDER_C5)
         " Band 5 GHz",
         " Band 2.4 + 5 GHz",
         " Band All + Deauth + Handshake",
+#endif
         " Exit"
     };
 
@@ -390,12 +410,16 @@ void WifiController::handleSniff(const TerminalCommand &cmd)
         modes.size() - 1
     );
 
+#if defined(BUS_EXPANDER_C5)
     if (mode == 4) return;
 
     if (mode == 3) {
         handleEvil(cmd);
         return;
     }
+#else
+    if (mode == 1) return;
+#endif
 
     terminalView.println("C5 WiFi Sniffing started... Press [ENTER] to stop.\n");
 
@@ -431,6 +455,7 @@ void WifiController::handleSniff(const TerminalCommand &cmd)
                 channel = (hopIndex % 13) + 1;
                 hopIndex++;
             }
+#if defined(BUS_EXPANDER_C5)
             else if (mode == 1) { // 5 GHz
                 channel = ch5[hopIndex % ch5Count];
                 hopIndex++;
@@ -445,6 +470,12 @@ void WifiController::handleSniff(const TerminalCommand &cmd)
 
                 hopIndex++;
             }
+#else
+            else {
+                channel = (hopIndex % 13) + 1;
+                hopIndex++;
+            }
+#endif
 
             wifiService.switchChannel(channel);
             lastHop = millis();
@@ -650,6 +681,10 @@ https://github.com/7h30th3r0n3/Evil-M5Project/blob/main/slave/C5-Slave/slave_uni
 */
 void WifiController::handleEvil(const TerminalCommand& cmd)
 {
+#if !defined(BUS_EXPANDER_C5)
+    terminalView.println("This build supports Wi-Fi 2.4 GHz only; active 5 GHz mode is unavailable.");
+    return;
+#endif
     terminalView.println("\n [⚠️  WARNING] ");
     terminalView.println(" This starts an active Wi-Fi sniff / deauth / capture.");
     terminalView.println(" Nearby access points and client traffic may be disrupted.");
@@ -699,6 +734,10 @@ void WifiController::handleFlood(const TerminalCommand& cmd)
     }
      
     terminalView.println("\nWiFi Flood: Starting on channel " + std::to_string(channel) + "... Press [ENTER] to stop.");
+    if (!wifiService.prepareRawTx(channel)) {
+        terminalView.println("WiFi Flood: Failed to prepare raw packet injection.\n");
+        return;
+    }
 
     while (true) {
         char c = terminalInput.readChar();
@@ -747,15 +786,25 @@ void WifiController::handleHelp()
 {
     terminalView.println("\nAvailable C5 WiFi commands:");
     terminalView.println("");
-    terminalView.println("  connect [ssid] [password]  Connect to 2.4GHz or 5GHz Wi-Fi");
+    terminalView.println(wifi5GHz
+        ? "  connect [ssid] [password]  Connect to 2.4GHz or 5GHz Wi-Fi"
+        : "  connect [ssid] [password]  Connect to 2.4GHz Wi-Fi");
     terminalView.println("  disconnect                 Disconnect from current Wi-Fi");
     terminalView.println("  status                     Show C5 Wi-Fi status");
-    terminalView.println("  scan                       Scan nearby 2.4GHz and 5GHz networks");
+    terminalView.println(wifi5GHz
+        ? "  scan                       Scan nearby 2.4GHz and 5GHz networks"
+        : "  scan                       Scan nearby 2.4GHz networks");
     terminalView.println("  discovery [timeout_ms]     Run network discovery");
     terminalView.println("  probe                      Probe open networks for internet access");
-    terminalView.println("  sniff                      Sniff 2.4GHz and 5GHz traffic");
-    terminalView.println("  evil                       Start active sniff/deauth/handshake capture mode");
-    terminalView.println("  spam                       Start beacon spam on 5GHz channels");
+    terminalView.println(wifi5GHz
+        ? "  sniff                      Sniff 2.4GHz and 5GHz traffic"
+        : "  sniff                      Sniff 2.4GHz traffic");
+    terminalView.println(wifi5GHz
+        ? "  evil                       Start active sniff/deauth/handshake capture mode"
+        : "  evil                       Unavailable in the 2.4GHz-only build");
+    terminalView.println(wifi5GHz
+        ? "  spam                       Start beacon spam on 5GHz channels"
+        : "  spam                       Unavailable in the 2.4GHz-only build");
     terminalView.println("  flood [channel]            Flood beacon frames on a channel");
     terminalView.println("  deauth [ssid]              Send 2.4GHz or 5GHz deauth to an AP");
     terminalView.println("  ap <ssid> <password>       Start access point");
@@ -769,7 +818,7 @@ void WifiController::handleHelp()
     terminalView.println("  lookup mac|ip <host>       Run lookup utilities (IP, MAC, etc.)");
     terminalView.println("  modbus <host> [port]       Open Modbus-related commands");
     terminalView.println("  reset                      Reset C5 Wi-Fi interface");
-    terminalView.println("  exit                       Exit the C5 WiFi mode");
+    terminalView.println("  exit                       Return to Bit Pirate CLI");
     terminalView.println("");
 }
 
@@ -788,23 +837,4 @@ Config
 void WifiController::handleConfig()
 {
     // Not needed for now
-}
-
-/*
-Handshake (detect from master)
-*/
-void WifiController::handleHandshake()
-{
-    // Just send a seq that will be detected by the master 
-    terminalView.println("[[BP-HANDSHAKE-OK]]");
-}
-
-/*
-Exit (signal from master)
-*/
-void WifiController::handleExit()
-{   
-    // Nothing for now, handled by the master
-    // could be used to do something on exit signal
-    // terminalView.println("[[BP-EXIT]]");
 }

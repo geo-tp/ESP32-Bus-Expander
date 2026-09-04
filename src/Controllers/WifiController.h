@@ -75,10 +75,4 @@ private:
 
     // Show help for Wi-Fi commands
     void handleHelp();
-
-    // Handle handhake with the master
-    void handleHandshake();
-
-    // Handle exit command from master
-    void handleExit();
 };
