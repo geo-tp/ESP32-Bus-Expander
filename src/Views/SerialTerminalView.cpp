@@ -24,12 +24,10 @@ void SerialTerminalView::welcome() {
     Serial.println(" |_____/_/\\_\\ .__/ \\__,_|_|  \\__,_|\\___|_|   ");
     Serial.println("            |_|                              ");
     Serial.println();
-    Serial.println("              C5 SLAVE INTERFACE");
-    Serial.println();
     Serial.printf("     Version %s           Ready\n", version.c_str());
     Serial.println();
-    Serial.println(" This device acts as a UART bridge to the ESP32-C5 slave firmware.");
-    Serial.println(" All commands and output are provided directly by the C5.");
+    Serial.println(" This device acts as a UART bridge to the slave firmware.");
+    Serial.println(" All commands and output are provided directly by the slave.");
     Serial.println();
     Serial.println(" Type 'mode' to start or 'help' for commands");
     Serial.println();
