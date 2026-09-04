@@ -9,7 +9,7 @@ It runs on an **ESP32-C5** or **ESP32-C6** and connects to the main Bit Pirate d
 
 The first goal of this expansion module is to extend the Bit Pirate with additional wireless capabilities, including **5 GHz Wi-Fi** and support for **IEEE 802.15.4-based radio protocols** such as Zigbee, Thread, and Matter.
 
-To flash it, use the webflasher and select **ESP32 Bus Expander (ESP32-C5)**: [ESP32 Bit Pirate Web Flasher](https://geo-tp.github.io/ESP32-Bit-Pirate/webflasher/).
+To flash it, use the webflasher and select **ESP32 Bus Expander**: [ESP32 Bit Pirate Web Flasher](https://geo-tp.github.io/ESP32-Bit-Pirate/webflasher/).
 
 ## Concept
 
@@ -34,7 +34,7 @@ It allows new radio technologies to be added without changing the main firmware.
 
 ## Current Features
 
-- **Wi-Fi 5 GHz support** (C5)
+- **Wi-Fi support** (C5 and C6) - see [Wi-Fi Mode](#wi-fi-mode)
 - **Zigbee support** (C5 and C6) see [Zigbee Mode](#zigbee-mode)
 - Connected to the Bit Pirate via **UART**
 - Works as a **radio coprocessor**
@@ -61,15 +61,65 @@ The Bus Expander is designed for **ESP32-C5 and ESP32-C6 based boards** with at 
 
 The Bus Expander connects to the main Bit Pirate using **UART**.
 
-Typical wiring:
+Typical C5 wiring:
 
-| Bit Pirate | Bus Expander |
+| Bit Pirate | Bus Expander (C5) |
 |------------|--------------|
-| RX         | 9            |
-| TX         | 10           |
+| RX         | GPIO 9            |
+| TX         | GPIO 10           |
 | GND        | GND          |
 
+Typical C6 wiring:
+
+| Bit Pirate | Bus Expander (C6) |
+|------------|-------------------|
+| RX         | GPIO 19            |
+| TX         | GPIO 18            |
+| GND        | GND               |
+
 Once connected, the Bit Pirate firmware can detect and communicate with the expander. You can set the UART config in the `platformio.ini` file.
+
+## Wi-Fi Mode
+
+The **Wi-Fi** mode turns the expander into a wireless network controller with
+its own CLI, exposed through the Bit Pirate terminal.
+
+Build environments:
+
+| Environment | Board | Wi-Fi bands |
+|-------------|-------|-------------|
+| `c5slave`   | ESP32-C5 DevKitC-1 | 2.4 GHz and 5 GHz |
+| `c6slave`   | ESP32-C6 DevKitM-1 | 2.4 GHz only |
+
+The 5 GHz features are available only in the `c5slave` build. The C6 firmware
+uses the same Wi-Fi commands, but its radio supports 2.4 GHz only.
+
+Commands available inside Wi-Fi mode:
+
+| Command | Description |
+|---------|-------------|
+| `connect [ssid] [password]` | Connect to a Wi-Fi network |
+| `disconnect` / `status` | Disconnect or show connection status |
+| `scan` | Scan nearby Wi-Fi networks |
+| `ap <ssid> <password>` | Start an access point |
+| `repeater` | Start or stop Wi-Fi repeater mode |
+| `sniff` | Capture Wi-Fi traffic |
+| `deauth [ssid]` | Send deauthentication frames |
+| `flood [channel]` | Flood beacon frames on a channel |
+| `spam` | Send beacon frames on 5 GHz channels (C5 only) |
+| `evil` | Start active sniff/deauth/handshake capture (C5 only) |
+| `probe` | Probe open networks for internet access |
+| `nmap <host> [-p port]` | Scan ports on a host |
+| `http get <url>` | Send an HTTP(S) GET request |
+| `lookup mac\|ip <host>` | Run network lookup utilities |
+| `reset` | Reset the Wi-Fi interface |
+
+Notes:
+
+- The C5 build provides the additional 5 GHz Wi-Fi band and related features.
+- The C6 build keeps the same command interface but is limited to 2.4 GHz.
+- Use only Wi-Fi scanning, capture, and transmission features on networks and
+        devices for which you have explicit authorization.
 
 ## Zigbee Mode
 
@@ -86,14 +136,6 @@ The environment builds the Coordinator/Router firmware by default with
 `-D ZIGBEE_MODE_ZCZR`. To build the End Device firmware, replace that flag in
 `platformio.ini` with `-D ZIGBEE_MODE_ED` before compiling. These are separate
 compile-time Zigbee configurations; do not enable both flags at once.
-
-Wiring for C6 uses UART1 at 115200 8N1:
-
-| Bit Pirate | Bus Expander (C6) |
-|------------|-------------------|
-| RX         | GPIO19 (TX1)      |
-| TX         | GPIO18 (RX1)      |
-| GND        | GND               |
 
 The C6 UART is the command transport. USB Serial/JTAG may be used for board debugging, but is not the Bit Pirate command transport. The C5 build keeps its existing UART behavior on GPIO9/10.
 
