@@ -49,6 +49,7 @@ public:
     std::vector<ZigbeeNetworkInfo> takeScanResults() override;
     bool factoryReset() override;
     ZigbeeNetworkStatus getStatus() override;
+    bool isRoleSupported(ZigbeeRoleEnum role) const override;
     bool isSupported() const override;
 
 private:

@@ -138,6 +138,17 @@ bool ZigbeeService::isSupported() const {
 #endif
 }
 
+bool ZigbeeService::isRoleSupported(ZigbeeRoleEnum role) const {
+#if defined(ZIGBEE_MODE_ED)
+    return role == ZigbeeRoleEnum::EndDevice;
+#elif defined(ZIGBEE_MODE_ZCZR)
+    return role == ZigbeeRoleEnum::Coordinator || role == ZigbeeRoleEnum::Router;
+#else
+    (void)role;
+    return false;
+#endif
+}
+
 #if defined(ZIGBEE_MODE_ED) || defined(ZIGBEE_MODE_ZCZR)
 void ZigbeeService::pushEvent_(const std::string& text) {
     if (events_.size() >= kMaxEvents) {
