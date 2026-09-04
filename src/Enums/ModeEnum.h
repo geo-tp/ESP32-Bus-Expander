@@ -7,7 +7,6 @@
 
 enum class ModeEnum {
     None = -1,
-    C5,
     WiFi,
     Zigbee,
     COUNT
@@ -16,8 +15,8 @@ enum class ModeEnum {
 class ModeEnumMapper {
 public:
     inline static const std::map<ModeEnum, std::string> map = {
-        {ModeEnum::None,       "None"},
-        {ModeEnum::WiFi,       "C5 WIFI"},
+        {ModeEnum::None,       "EXPANDER"},
+        {ModeEnum::WiFi,       "WIFI (EXP)"},
         {ModeEnum::Zigbee,     "ZIGBEE"},
 
     };
@@ -54,12 +53,8 @@ public:
 
     static ModeEnum fromString(const std::string& name) {
         std::string upper = toUpper(name);
-
-        for (const auto& kv : map) {
-            if (kv.second == upper) {
-                return kv.first;
-            }
-        }
+        if (upper == "WIFI" || upper == "WIFI (EXP)" || upper == "C5 WIFI") return ModeEnum::WiFi;
+        if (upper == "ZIGBEE") return ModeEnum::Zigbee;
         return ModeEnum::None;
     }
 };
