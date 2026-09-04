@@ -7,7 +7,7 @@
 
 It runs on an **ESP32-C5** or **ESP32-C6** and connects to the main Bit Pirate device via **UART**, adding hardware features that are not available on the primary board.
 
-The first goal of this expansion module is to provide **5 GHz Wi-Fi support**, which is not available on most ESP32-S3 based boards. It also exposes **802.15.4 radio protocols** such as **Zigbee** through its own mode and CLI.
+The first goal of this expansion module is to extend the Bit Pirate with additional wireless capabilities, including **5 GHz Wi-Fi** and support for **IEEE 802.15.4-based radio protocols** such as Zigbee, Thread, and Matter.
 
 To flash it, use the webflasher and select **ESP32 Bus Expander (ESP32-C5)**: [ESP32 Bit Pirate Web Flasher](https://geo-tp.github.io/ESP32-Bit-Pirate/webflasher/).
 
@@ -35,7 +35,7 @@ It allows new radio technologies to be added without changing the main firmware.
 ## Current Features
 
 - **Wi-Fi 5 GHz support** (C5)
-- **Zigbee mode** (C5/C6): device emulation, network controller, scanning - see [Zigbee Mode](#zigbee-mode)
+- **Zigbee mode** (C6 builds): device emulation, network controller, scanning - see [Zigbee Mode](#zigbee-mode)
 - Connected to the Bit Pirate via **UART**
 - Works as a **radio coprocessor**
 - Can be controlled from the Bit Pirate firmware
@@ -84,17 +84,23 @@ Build environments:
 
 | Environment | Board | Zigbee roles |
 |-------------|-------|--------------|
-| `c6slave`   | ESP32-C6 DevKitM-1 | Coordinator + Router |
-| `c6slave-ed` | ESP32-C6 DevKitM-1 | End Device (sleepy) |
-| `c5slave`   | ESP32-C5 DevKitC-1 | Wi-Fi mode only |
+| `c6slave`   | ESP32-C6 DevKitM-1 | 2.4 GHz Wi-Fi; Coordinator + Router by default, or End Device |
+| `c5slave`   | ESP32-C5 DevKitC-1 | 2.4/5 GHz Wi-Fi; Coordinator + Router |
 
-Wiring for C6 (flat cable, same pin numbers cross over):
+The C6 environment builds the Coordinator/Router firmware by default with
+`-D ZIGBEE_MODE_ZCZR`. To build the End Device firmware, replace that flag in
+`platformio.ini` with `-D ZIGBEE_MODE_ED` before compiling. These are separate
+compile-time Zigbee configurations; do not enable both flags at once.
+
+Wiring for C6 uses UART1 at 115200 8N1:
 
 | Bit Pirate | Bus Expander (C6) |
 |------------|-------------------|
-| RX         | 1 (TX)            |
-| TX         | 2 (RX)            |
+| RX         | GPIO19 (TX1)      |
+| TX         | GPIO18 (RX1)      |
 | GND        | GND               |
+
+The C6 UART is the command transport. USB Serial/JTAG may be used for board debugging, but is not the Bit Pirate command transport. The C5 build keeps its existing UART behavior on GPIO9/10.
 
 Commands available inside ZIGBEE mode:
 
@@ -122,7 +128,7 @@ Notes:
 - As a **Light** device, hubs control the tool (received commands appear under `events`); as a **Switch**, the tool controls paired lights.
 - Sensor readings are fake by design - useful to test how hubs and automations react to injected telemetry.
 - Scenes are handled natively when hubs store/recall them. Groups can be targeted directly (`on 0x1234`).
-- The End Device role requires the `c6slave-ed` image (separate prebuilt Zigbee libraries, same split as upstream).
+- The End Device role requires a C6 firmware built with `ZIGBEE_MODE_ED`.
 
 
 ## Warning

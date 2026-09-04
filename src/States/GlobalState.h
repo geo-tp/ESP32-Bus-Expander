@@ -9,10 +9,10 @@
 class GlobalState {
 private:
     // Mode
-    ModeEnum currentMode = ModeEnum::WiFi;
+    ModeEnum currentMode = ModeEnum::None;
 
     // Version
-    const std::string version = "0.1";
+    const std::string version = "0.2";
 
     // NVS
     std::string nvsNamespace = "wifi_settings";
