@@ -70,6 +70,7 @@ public:
     size_t getWifi5ghzChannelsCount() const;
     bool isProvisioningEnabled() const;
     void reset();
+    bool prepareRawTx(uint8_t channel = 1);
     
     // Access point
     bool startAccessPoint(const std::string& ssid, const std::string& password = "", int channel = 1, int maxConn = 4);

@@ -116,6 +116,26 @@ void WifiService::reset() {
     connected = false;
 }
 
+bool WifiService::prepareRawTx(uint8_t channel) {
+    esp_wifi_set_promiscuous(false);
+    esp_wifi_set_promiscuous_rx_cb(nullptr);
+
+    WiFi.mode(WIFI_STA);
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    esp_err_t err = esp_wifi_init(&cfg);
+    if (err != ESP_OK && err != ESP_ERR_WIFI_INIT_STATE) {
+        return false;
+    }
+
+    err = esp_wifi_start();
+    if (err != ESP_OK && err != ESP_ERR_WIFI_STATE) {
+        return false;
+    }
+
+    return esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE) == ESP_OK;
+}
+
 void WifiService::setModeApSta() {
     WiFi.mode(WIFI_AP_STA);
 }
