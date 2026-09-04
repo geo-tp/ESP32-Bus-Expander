@@ -114,9 +114,17 @@ void ZigbeeController::handleStart(const TerminalCommand& cmd) {
     }
 
     const std::string roleRaw = argTransformer.toLower(cmd.getSubcommand());
+#if defined(ZIGBEE_MODE_ED)
+    ZigbeeRoleEnum role = ZigbeeRoleEnum::EndDevice;
+#else
     ZigbeeRoleEnum role = ZigbeeRoleEnum::Coordinator;
-    if (!roleRaw.empty() && !parseRole(roleRaw, role)) {
+#endif
+    if (!roleRaw.empty() && !ZigbeeRoleEnumMapper::fromString(roleRaw, role)) {
         terminalView.println("Unknown role. Usage: start [coordinator|router|enddevice]");
+        return;
+    }
+    if (!zigbeeService.isRoleSupported(role)) {
+        terminalView.println("Unsupported Zigbee role for this build.");
         return;
     }
 
@@ -291,7 +299,8 @@ void ZigbeeController::handleOnOff(const TerminalCommand& cmd) {
     }
 
     const std::string action = cmd.getRoot();
-    const uint16_t group = parseGroupToken(cmd.getSubcommand());
+    const uint16_t group = cmd.getSubcommand().empty()
+        ? 0 : argTransformer.parseHexOrDec16(cmd.getSubcommand());
     bool sent = false;
     std::string confirmation;
     if (action == "on") {
@@ -351,7 +360,7 @@ void ZigbeeController::handleDim(const TerminalCommand& cmd) {
     std::istringstream args(cmd.getArgs());
     std::string groupToken;
     args >> groupToken;
-    const uint16_t group = parseGroupToken(groupToken);
+    const uint16_t group = groupToken.empty() ? 0 : argTransformer.parseHexOrDec16(groupToken);
 
     if (!zigbeeService.sendLevel(level, group)) {
         terminalView.println("Failed to send command. Requires running switch endpoint with paired lights.");
@@ -382,7 +391,7 @@ void ZigbeeController::handleColor(const TerminalCommand& cmd) {
         return;
     }
     args >> groupToken;
-    const uint16_t group = parseGroupToken(groupToken);
+    const uint16_t group = groupToken.empty() ? 0 : argTransformer.parseHexOrDec16(groupToken);
 
     uint8_t r = 0, g = 0, b = 0;
     if (format == "rgb") {
@@ -601,17 +610,7 @@ void ZigbeeController::handleHelp() {
     terminalView.println("  scan [1-4]                            Scan for nearby networks");
     terminalView.println("  reset                                 Factory reset network state");
     terminalView.println("  config                                Show current configuration");
-}
-
-bool ZigbeeController::parseRole(const std::string& raw, ZigbeeRoleEnum& out) const {
-    return ZigbeeRoleEnumMapper::fromString(raw, out);
-}
-
-uint16_t ZigbeeController::parseGroupToken(const std::string& raw) const {
-    if (raw.empty()) {
-        return 0;
-    }
-    return argTransformer.parseHexOrDec16(raw);
+    terminalView.println("  exit                                  Return to Bit Pirate CLI");
 }
 
 std::string ZigbeeController::endpointToString(ZigbeeEndpointEnum endpoint) const {

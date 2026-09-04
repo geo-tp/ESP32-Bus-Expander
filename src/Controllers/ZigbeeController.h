@@ -43,9 +43,6 @@ private:
     void handleConfig();
     void handleHelp();
 
-    bool parseRole(const std::string& raw, ZigbeeRoleEnum& out) const;
-    // Parses an optional group address token ("0x1A2B", decimal, or empty = 0)
-    uint16_t parseGroupToken(const std::string& raw) const;
     std::string endpointToString(ZigbeeEndpointEnum endpoint) const;
     void printStatusLine();
 
