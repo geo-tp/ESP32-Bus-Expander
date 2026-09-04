@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cstdint>
 
 // Interface for terminal input
 // This is the interface expected by the CommandDispatcher to handle user input.

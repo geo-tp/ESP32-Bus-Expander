@@ -94,6 +94,8 @@ public:
 
     virtual ZigbeeNetworkStatus getStatus() = 0;
 
+    virtual bool isRoleSupported(ZigbeeRoleEnum role) const = 0;
+
     // False when the running chip has no 802.15.4 radio or the build
     // does not include the Zigbee libraries
     virtual bool isSupported() const = 0;
