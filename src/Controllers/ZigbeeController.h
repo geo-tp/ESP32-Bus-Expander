@@ -1,13 +1,15 @@
 #pragma once
 #include <string>
+#include <set>
+#include <vector>
 #include "Models/TerminalCommand.h"
 #include "Interfaces/ITerminalView.h"
 #include "Interfaces/IInput.h"
 #include "Interfaces/IZigbeeService.h"
 #include "Enums/ZigbeeRoleEnum.h"
 #include "Transformers/ArgTransformer.h"
+#include "Transformers/ZigbeeTransformer.h"
 #include "Managers/UserInputManager.h"
-#include "States/GlobalState.h"
 
 class ZigbeeController {
 public:
@@ -27,24 +29,28 @@ public:
 
 private:
     void handleStart(const TerminalCommand& cmd);
-    void handleStop();
     void handleStatus();
-    void handleChannel(const TerminalCommand& cmd);
+    void handleSetChannel(const TerminalCommand& cmd);
     void handlePermit(const TerminalCommand& cmd);
+    void handlePair(const TerminalCommand& cmd);
     void handleDevice(const TerminalCommand& cmd);
     void handleOnOff(const TerminalCommand& cmd);
     void handleDim(const TerminalCommand& cmd);
     void handleColor(const TerminalCommand& cmd);
     void handleSensor(const TerminalCommand& cmd);
     void handleEvents();
-    void handleDevices();
+    void handleDevices(const TerminalCommand& cmd);
+    void handleBindings();
     void handleScan(const TerminalCommand& cmd);
-    void handleReset();
-    void handleConfig();
+    void handleSniff(const TerminalCommand& cmd);
+    void handleMonitor(const TerminalCommand& cmd);
     void handleHelp();
 
-    std::string endpointToString(ZigbeeEndpointEnum endpoint) const;
-    void printStatusLine();
+    void printServiceError(const std::string& fallback);
+    void printLines(const std::vector<std::string>& lines);
+    int watchForNewDevices(int seconds, std::set<uint16_t>& known, bool allowAbort,
+                           bool stopAfterFirst = false, uint16_t* firstFound = nullptr);
+    bool runNetworkScan(uint8_t duration);
 
     // Runs ensureConfigured() and reports whether the chip can do Zigbee.
     // When false, the radio commands must not reach the service.
@@ -56,7 +62,7 @@ private:
     IZigbeeService& zigbeeService;
     ArgTransformer& argTransformer;
     UserInputManager& userInputManager;
-    GlobalState& state = GlobalState::getInstance();
+    ZigbeeTransformer zigbeeTransformer;
 
     bool configured = false;
 };
