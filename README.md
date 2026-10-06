@@ -1,177 +1,172 @@
-
 # ESP32 Bus Expander
 
-![Logo banner of the ESP32 Bus Expander](https://github.com/geo-tp/ESP32-Bit-Pirate/raw/pioarduino/images/bus_pirate_exp.png)
+![ESP32 Bus Expander](https://github.com/geo-tp/ESP32-Bit-Pirate/raw/pioarduino/images/bus_pirate_exp.png)
 
-**ESP32 Bus Expander** is a companion firmware designed to extend the capabilities of the [ESP32 Bit Pirate](https://github.com/geo-tp/ESP32-Bit-Pirate).
+**ESP32 Bus Expander** is a companion firmware for the [ESP32 Bit Pirate](https://github.com/geo-tp/ESP32-Bit-Pirate).
 
-It runs on an **ESP32-C5** or **ESP32-C6** and connects to the main Bit Pirate device via **UART**, adding hardware features that are not available on the primary board.
+It runs on an **ESP32-C5** or **ESP32-C6** and connects to Bit Pirate over **UART**, adding radio capabilities not available on the main board, including **5 GHz Wi-Fi on ESP32-C5** and **IEEE 802.15.4 / Zigbee** support.
 
-The first goal of this expansion module is to extend the Bit Pirate with additional wireless capabilities, including **5 GHz Wi-Fi** and support for **IEEE 802.15.4-based radio protocols** such as Zigbee, Thread, and Matter.
-
-To flash it, use the webflasher and select **ESP32 Bus Expander**: [ESP32 Bit Pirate Web Flasher](https://geo-tp.github.io/ESP32-Bit-Pirate/webflasher/).
+Flash it from the [ESP32 Bit Pirate Web Flasher](https://geo-tp.github.io/ESP32-Bit-Pirate/webflasher/) by selecting **ESP32 Bus Expander**.
 
 ## Concept
 
-Many boards used with the ESP32 Bit Pirate  only support **2.4 GHz Wi-Fi**.
+The expander acts as a small radio coprocessor controlled from the normal Bit Pirate terminal:
 
-The **ESP32 Bus Expander** solves this limitation by adding a secondary device that provides additional radio capabilities.
-
-The architecture becomes:
-
-```
-ESP32 Bit Pirate (ESP32-S3)
-        │
-        │ UART
-        ▼
-ESP32 Bus Expander (ESP32-C5)
+```text
+ESP32 Bit Pirate
+      │
+      │ UART
+      ▼
+ESP32 Bus Expander
+   ESP32-C5 / C6
 ```
 
-- The **Bit Pirate** remains the main interface (CLI, scripts, tools).
-- The **Bus Expander** provides additional wireless hardware features.
+Bit Pirate keeps the CLI, scripting and tools while the expander handles additional wireless protocols.
 
-It allows new radio technologies to be added without changing the main firmware.
+## Features
 
-## Current Features
+The Bus Expander adds a dedicated wireless coprocessor to Bit Pirate, providing:
 
-- **Wi-Fi support** (C5 and C6) - see [Wi-Fi Mode](#wi-fi-mode)
-- **Zigbee support** (C5 and C6) see [Zigbee Mode](#zigbee-mode)
-- Connected to the Bit Pirate via **UART**
-- Works as a **radio coprocessor**
-- Can be controlled from the Bit Pirate firmware
+**Wi-Fi**
+- 2.4 GHz support on ESP32-C5 and ESP32-C6
+- 5 GHz support on ESP32-C5
+- Network scanning, packet capture and diagnostic tools
 
-With the expander connected, the Bit Pirate can interact with networks that require **802.15.4-based radio protocols**.
+**Zigbee / IEEE 802.15.4**
+- Raw 802.15.4 / Zigbee traffic sniffing
+- Zigbee network discovery and pairing
+- Device probing, endpoint and cluster discovery
+- Live monitoring of paired-device traffic
 
-## Planned Features
-
-Future firmware versions may extend support for additional radio protocols:
-
-- **Thread**
-- **Matter**
-- Other **802.15.4 based protocols**
-
-This will allow the ESP32 Bit Pirate ecosystem to interact with more **IoT wireless networks and devices**.
-
+Support for **Thread**, **Matter** and additional IEEE 802.15.4 protocols is planned.
 
 ## Hardware
 
-The Bus Expander is designed for **ESP32-C5 and ESP32-C6 based boards** with at least 4MB flash, no PSRAM needed.
+Any **ESP32-C5 or ESP32-C6 board with at least 4 MB flash** should generally be compatible.
+
+**PSRAM is not required.**
+
+| Board | Chip | Status | Wi-Fi |
+|---|---|---|---|
+| ESP32-C5 DevKitC-1 | ESP32-C5 | Supported / tested | 2.4 + 5 GHz |
+| ESP32-C6 DevKitM-1 | ESP32-C6 | Supported / tested | 2.4 GHz |
+| Other ESP32-C5 boards | ESP32-C5 | Expected compatible | 2.4 + 5 GHz |
+| Other ESP32-C6 boards | ESP32-C6 | Expected compatible | 2.4 GHz |
+
+Other boards may only require adjusting UART pins in `platformio.ini`.
 
 ## Connection
 
-The Bus Expander connects to the main Bit Pirate using **UART**.
+The expander communicates with Bit Pirate over UART.
 
-Typical C5 wiring:
+### ESP32-C5
 
-| Bit Pirate | Bus Expander (C5) |
-|------------|--------------|
-| RX         | GPIO 9            |
-| TX         | GPIO 10           |
-| GND        | GND          |
+| Bit Pirate | Bus Expander |
+|---|---|
+| RX | GPIO 9 |
+| TX | GPIO 10 |
+| GND | GND |
 
-Typical C6 wiring:
+### ESP32-C6
 
-| Bit Pirate | Bus Expander (C6) |
-|------------|-------------------|
-| RX         | GPIO 19            |
-| TX         | GPIO 18            |
-| GND        | GND               |
+| Bit Pirate | Bus Expander |
+|---|---|
+| RX | GPIO 19 |
+| TX | GPIO 18 |
+| GND | GND |
 
-Once connected, the Bit Pirate firmware can detect and communicate with the expander. You can set the UART config in the `platformio.ini` file.
+UART pins can be changed from `platformio.ini`.
 
 ## Wi-Fi Mode
 
-The **Wi-Fi** mode turns the expander into a wireless network controller with
-its own CLI, exposed through the Bit Pirate terminal.
+Wi-Fi mode exposes the C5/C6 radio through the Bit Pirate CLI.
 
-Build environments:
-
-| Environment | Board | Wi-Fi bands |
-|-------------|-------|-------------|
-| `c5slave`   | ESP32-C5 DevKitC-1 | 2.4 GHz and 5 GHz |
-| `c6slave`   | ESP32-C6 DevKitM-1 | 2.4 GHz only |
-
-The 5 GHz features are available only in the `c5slave` build. The C6 firmware
-uses the same Wi-Fi commands, but its radio supports 2.4 GHz only.
-
-Commands available inside Wi-Fi mode:
+The **ESP32-C5 supports both 2.4 and 5 GHz**, while the **ESP32-C6 is limited to 2.4 GHz**.
 
 | Command | Description |
-|---------|-------------|
-| `connect [ssid] [password]` | Connect to a Wi-Fi network |
-| `disconnect` / `status` | Disconnect or show connection status |
-| `scan` | Scan nearby Wi-Fi networks |
+|---|---|
+| `connect [ssid] [password]` | Connect to a network |
+| `disconnect` | Disconnect |
+| `status` | Show Wi-Fi status |
+| `scan` | Scan nearby networks |
 | `ap <ssid> <password>` | Start an access point |
-| `repeater` | Start or stop Wi-Fi repeater mode |
+| `repeater` | Wi-Fi repeater mode |
 | `sniff` | Capture Wi-Fi traffic |
 | `deauth [ssid]` | Send deauthentication frames |
-| `flood [channel]` | Flood beacon frames on a channel |
-| `spam` | Send beacon frames on 5 GHz channels (C5 only) |
-| `evil` | Start active sniff/deauth/handshake capture (C5 only) |
+| `flood [channel]` | Beacon flood on a channel |
+| `spam` | 5 GHz beacon spam - C5 only |
+| `evil` | Active sniff/deauth/handshake tools - C5 only |
 | `probe` | Probe open networks for internet access |
-| `nmap <host> [-p port]` | Scan ports on a host |
-| `http get <url>` | Send an HTTP(S) GET request |
-| `lookup mac\|ip <host>` | Run network lookup utilities |
-| `reset` | Reset the Wi-Fi interface |
+| `nmap <host> [-p port]` | Port scan |
+| `http get <url>` | HTTP(S) GET request |
+| `lookup mac\|ip <host>` | Network lookup utilities |
+| `reset` | Reset Wi-Fi interface |
 
-Notes:
+Use active Wi-Fi transmission features only on networks and devices you are authorized to test.
 
-- The C5 build provides the additional 5 GHz Wi-Fi band and related features.
-- The C6 build keeps the same command interface but is limited to 2.4 GHz.
-- Use only Wi-Fi scanning, capture, and transmission features on networks and
-        devices for which you have explicit authorization.
 
 ## Zigbee Mode
 
-The **ZIGBEE** mode turns the expander into a standalone Zigbee device emulator and network controller with its own CLI, exposed through the Bit Pirate terminal.
+Zigbee mode provides a CLI for **IEEE 802.15.4 discovery, Zigbee network creation, pairing, device inspection and traffic monitoring**.
 
-Build environments:
+Two firmware configurations are available:
 
-| Environment | Board | Zigbee roles |
-|-------------|-------|--------------|
-| `c6slave`   | ESP32-C6 DevKitM-1 | 2.4 GHz Wi-Fi; Coordinator + Router by default, or End Device |
-| `c5slave`   | ESP32-C5 DevKitC-1 | 2.4/5 GHz Wi-Fi; Coordinator + Router by default, or End Device |
+- `ZIGBEE_MODE_ZCZR` — Coordinator / Router
+- `ZIGBEE_MODE_ED` — End Device / device emulation
 
-The environment builds the Coordinator/Router firmware by default with
-`-D ZIGBEE_MODE_ZCZR`. To build the End Device firmware, replace that flag in
-`platformio.ini` with `-D ZIGBEE_MODE_ED` before compiling. These are separate
-compile-time Zigbee configurations; do not enable both flags at once.
+Only one Zigbee configuration should be enabled at build time.
 
-The C6 UART is the command transport. USB Serial/JTAG may be used for board debugging, but is not the Bit Pirate command transport. The C5 build keeps its existing UART behavior on GPIO9/10.
+The default for release 
 
-Commands available inside ZIGBEE mode:
+### Coordinator / Router commands
 
 | Command | Description |
-|---------|-------------|
-| `start [coordinator\|router]` | Start the network in the given role |
-| `stop` / `status` / `config` | Stack control and status |
-| `channel 11-26` | Set the 802.15.4 channel before starting |
-| `permit [seconds]` | Allow new devices to join |
-| `device <type>` | Emulate an endpoint (see below) |
-| `on` / `off` / `toggle [group]` | Control paired lights or a group |
-| `dim <0-255 \| 0-100%> [group]` | Brightness of paired lights |
-| `color rgb <r g b>` / `color hsv <h s v> [group]` | Color of paired lights |
-| `settemp <celsius>` / `sethum <percent>` / `setocc <0\|1>` | Inject fake sensor readings |
-| `report` | Report sensor readings immediately |
-| `events` | Show events received from the network |
-| `devices` | List devices bound to this endpoint |
-| `scan [1-4]` | Scan channels for active networks |
-| `reset` | Factory-reset the Zigbee network state |
+|---|---|
+| `sniff [channel]` | Raw IEEE 802.15.4 / Zigbee traffic |
+| `start [coordinator\|router] [channel]` | Start the Zigbee network |
+| `scan [seconds]` | Discover Zigbee PANs and devices |
+| `status` | Show network and runtime status |
+| `channel [11-26]` | Select channel before `start` |
+| `events` | Show recent network events |
+| `pair [seconds]` | Wait for and pair one device |
+| `permit <seconds\|off>` | Control the join window |
+| `devices` | List devices and probe endpoints/clusters |
+| `monitor` | Monitor traffic from paired devices |
 
-Emulated device types (`device <type>`): `none`, `light`, `dimlight`, `colorlight`, `switch`, `tempsensor`, `occupancy`, `fan`, `outlet`, `rangeextender`.
+### End Device build
 
-Notes:
+The `ZIGBEE_MODE_ED` build exposes device-emulation commands instead of coordinator-only pairing tools.
 
-- As a **Light** device, hubs control the tool (received commands appear under `events`); as a **Switch**, the tool controls paired lights.
-- Sensor readings are fake by design - useful to test how hubs and automations react to injected telemetry.
-- Scenes are handled natively when hubs store/recall them. Groups can be targeted directly (`on 0x1234`).
-- The End Device role requires a C6 firmware built with `ZIGBEE_MODE_ED`.
+Supported device types include:
 
+```text
+none
+light
+dimlight
+colorlight
+switch
+tempsensor
+occupancy
+fan
+outlet
+rangeextender
+```
+
+Depending on the selected endpoint, commands are available for light control, dimming, color, fake temperature/humidity/occupancy values, reporting and bindings.
+
+This mode is mainly useful for testing hubs, automations and Zigbee controllers. Release builds use the Coordinator / Router configuration by default
+
+## Global Commands
+
+| Command | Description |
+|---|---|
+| `reboot` | Restart the Bus Expander |
+| `exit` | Return to the Bit Pirate CLI |
 
 ## Warning
 
-> ⚠️ **RF Usage Warning**: Always respect local regulations regarding wireless transmissions.
+> ⚠️ **RF Usage Warning:** Always respect local regulations and only transmit or test against devices and networks you are authorized to use.
 
 ## Credits
 
-The `evil` command with features such as sniffing, deauthentication, and handshake capture comes from the [Evil Firmware](https://github.com/7h30th3r0n3/Evil-M5Project)
+The Wi-Fi `evil` command and its sniffing, deauthentication and handshake capture features are based on [Evil-M5Project](https://github.com/7h30th3r0n3/Evil-M5Project).
