@@ -1,5 +1,6 @@
 #include "CommandDispatcher.h"
 #include "Data/AutoCompleteWords.h"
+#include <Arduino.h>
 
 /*
 Constructor
@@ -49,10 +50,17 @@ Dispatch Command
 void CommandDispatcher::dispatchCommand(const TerminalCommand& cmd) {
     const std::string root = cmd.getRoot();
 
-    // These commands are sent by the Bit Pirate while it is detecting or
-    // leaving an expander and must work independently of the active mode.
+    // Global commands that must work independently of the active mode.
     if (root == "handshake") {
         provider.getTerminalView().println("[[BP-HANDSHAKE-OK]]");
+        return;
+    }
+    if (root == "reboot") {
+        provider.getTerminalView().println("");
+        provider.getTerminalView().println("Rebooting expander...");
+        provider.getTerminalView().println("");
+        delay(100);
+        ESP.restart();
         return;
     }
     if (root == "exit") {
@@ -105,6 +113,22 @@ void CommandDispatcher::setCurrentMode(ModeEnum newMode) {
         return;
     }
 
+    // Arduino-ESP32 does not expose a safe Zigbee teardown. Once Zigbee.begin()
+    // has initialized the native 802.15.4 stack, Zigbee's main loop owns the
+    // shared RF subsystem until reboot. Switching to Wi-Fi after that leaves
+    // Wi-Fi scan/promiscuous operation in an unreliable state, so fail closed
+    // instead of pretending the mode switch succeeded.
+    if (newMode == ModeEnum::WiFi && provider.getZigbeeService().isSupported()) {
+        const auto zigbeeStatus = provider.getZigbeeService().getStatus();
+        if (zigbeeStatus.initialized) {
+            provider.getTerminalView().println("");
+            provider.getTerminalView().println("Cannot switch to WiFi after Zigbee start.");
+            provider.getTerminalView().println("Use 'reboot', then enter WiFi mode.");
+            provider.getTerminalView().println("");
+            return;
+        }
+    }
+
     // Release resources of current mode if needed
     auto currentMode = state.getCurrentMode();
     releaseMode(currentMode, newMode);
@@ -134,7 +158,8 @@ void CommandDispatcher::releaseMode(ModeEnum currentMode, ModeEnum newMode) {
         case ModeEnum::WiFi:
             break;
 
-        // Stop the radio when leaving Zigbee mode
+        // Release transient Zigbee observers when leaving the CLI mode.
+        // The initialized Zigbee stack itself remains active until reboot.
         case ModeEnum::Zigbee:
             provider.getZigbeeController().ensureReleased();
             break;
